@@ -245,6 +245,19 @@ chat-native response shapes.
 
 ### Bonus A — CI/CD
 
+Pipeline evidence:
+
+- Pull request workflow run: `29657902830` on branch `codex/bonus-a-pipeline`.
+  `lint-and-test` completed successfully and `deploy` was skipped, confirming pull
+  requests do not mutate the serving endpoint.
+- Main-branch workflow run: `29657943955` after merging PR #1. `lint-and-test`
+  completed successfully, then `deploy` completed successfully.
+- The deploy log registered
+  `cs4603.student_27100077.document_analyst` version `11`, updated
+  `27100077-document-analyst`, and printed `Endpoint status: READY`.
+- After the Bonus A deploy output was captured, `27100077-document-analyst` was deleted
+  again and verified as not found, matching the cost cleanup requirement.
+
 1. **Why deploy only from `main`?**
 
    `main` is the reviewed source of truth and provides one serialization point for the
