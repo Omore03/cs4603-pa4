@@ -1,12 +1,3 @@
-# Bonus A — CI/CD pipeline (.github/workflows/deploy.yml)
-#
-# TODO: Implement a lint -> test -> deploy workflow.
-#   - lint:   ruff check on agent/ and client/
-#   - test:   a smoke test that imports and compiles the graph
-#   - deploy: ONLY on push to main; log the model, register a new UC version,
-#             and update the serving endpoint. Use GitHub Secrets for
-#             DATABRICKS_HOST / DATABRICKS_TOKEN. Add a workflow_dispatch trigger.
-
 name: deploy
 
 on:
@@ -20,12 +11,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # TODO: install uv, sync deps, run `ruff check` and the smoke test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+      - name: Lint
+        run: uv run ruff check agent/ client/
+      - name: Test
+        run: uv run pytest -q
 
   deploy:
     needs: lint-and-test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_MODEL: ${{ vars.DATABRICKS_MODEL || 'databricks-meta-llama-3-3-70b-instruct' }}
+      EMBEDDINGS_ENDPOINT: ${{ vars.EMBEDDINGS_ENDPOINT || 'databricks-gte-large-en' }}
+      UC_CATALOG: ${{ vars.UC_CATALOG || 'main' }}
+      UC_SCHEMA: ${{ vars.UC_SCHEMA || 'default' }}
+      VECTOR_SEARCH_ENDPOINT: ${{ vars.VECTOR_SEARCH_ENDPOINT }}
+      VECTOR_SEARCH_INDEX: ${{ vars.VECTOR_SEARCH_INDEX }}
+      SERVING_ENDPOINT_NAME: ${{ vars.SERVING_ENDPOINT_NAME }}
+      REGISTERED_MODEL_NAME: ${{ vars.REGISTERED_MODEL_NAME || 'document_analyst' }}
+      MLFLOW_EXPERIMENT: ${{ vars.MLFLOW_EXPERIMENT || '/Shared/cs4603-pa4' }}
+      SECRET_SCOPE: ${{ vars.SECRET_SCOPE || 'cs4603-deploy' }}
+      MCP_SERVER_URL: ${{ vars.MCP_SERVER_URL }}
+      MCP_SERVER_CLIENT_ID: ${{ secrets.MCP_SERVER_CLIENT_ID }}
+      MCP_SERVER_CLIENT_SECRET: ${{ secrets.MCP_SERVER_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      # TODO: install deps and run `python deployment/deploy.py` with secrets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Log, register, and deploy
+        run: uv run python deployment/deploy.py
