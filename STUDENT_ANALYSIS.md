@@ -247,7 +247,7 @@ chat-native response shapes.
 
 Pipeline evidence:
 
-- Pull request workflow run: `29657902830` on branch `codex/bonus-a-pipeline`.
+- Pull request workflow run: `29657902830` for the Bonus A pipeline branch.
   `lint-and-test` completed successfully and `deploy` was skipped, confirming pull
   requests do not mutate the serving endpoint.
 - Main-branch workflow run: `29657943955` after merging PR #1. `lint-and-test`
