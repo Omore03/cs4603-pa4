@@ -1,10 +1,4 @@
-"""Vector Search retriever factory (Task 1.4 support / rag/store.py).
-
-TODO: Implement `get_retriever(k=4)` that returns a LangChain retriever over the
-Databricks Vector Search index built by `ingest.py`, using
-`DatabricksVectorSearch` from `databricks_langchain`. Read endpoint/index names
-from config.get_settings(). This exact retriever is reused by the deployed model.
-"""
+"""Databricks Vector Search retriever factory shared by local and serving runs."""
 
 from __future__ import annotations
 
@@ -15,8 +9,37 @@ CITATION_COLUMNS = ["chunk_id", "source", "page"]
 
 
 def get_vector_store():
-    raise NotImplementedError("Task 1.4: return a DatabricksVectorSearch handle")
+    from databricks_langchain import DatabricksVectorSearch
+
+    settings = get_settings()
+    missing = [
+        name
+        for name, value in {
+            "VECTOR_SEARCH_ENDPOINT": settings["vs_endpoint"],
+            "VECTOR_SEARCH_INDEX": settings["vs_index"],
+        }.items()
+        if not value
+    ]
+    if missing:
+        raise OSError(f"Missing required environment variables: {', '.join(missing)}")
+
+    kwargs = {
+        "endpoint": settings["vs_endpoint"],
+        "index_name": settings["vs_index"],
+        "columns": [TEXT_COLUMN, *CITATION_COLUMNS],
+    }
+    if settings["host"] and settings["token"]:
+        kwargs["client_args"] = {
+            "workspace_url": settings["host"],
+            "personal_access_token": settings["token"],
+        }
+
+    return DatabricksVectorSearch(
+        **kwargs,
+    )
 
 
 def get_retriever(k: int = 4):
-    raise NotImplementedError("Task 1.4: return a top-k retriever over the index")
+    if k < 1:
+        raise ValueError("k must be at least 1")
+    return get_vector_store().as_retriever(search_kwargs={"k": k})

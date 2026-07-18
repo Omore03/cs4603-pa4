@@ -3,7 +3,7 @@ name = "pa4-document-analyst"
 version = "0.1.0"
 description = "CS4603 PA4 — LangGraph multi-agent Document Analyst deployed on Databricks"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     # ─── LangGraph / LangChain core ──────────────────────────────────────────
     "langgraph>=0.2.0",
@@ -47,6 +47,7 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [build-system]
 requires = ["hatchling"]

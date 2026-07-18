@@ -27,10 +27,10 @@ def _require(name: str) -> str:
 
 
 def get_settings() -> dict[str, str]:
-    """Return all configuration values, validating the required ones."""
+    """Return configuration, allowing platform-native auth in Agent Framework."""
     return {
-        "host": _require("DATABRICKS_HOST").rstrip("/"),
-        "token": _require("DATABRICKS_TOKEN"),
+        "host": os.environ.get("DATABRICKS_HOST", "").rstrip("/"),
+        "token": os.environ.get("DATABRICKS_TOKEN", ""),
         "model": _require("DATABRICKS_MODEL"),
         "embeddings": os.environ.get("EMBEDDINGS_ENDPOINT", "databricks-gte-large-en"),
         "vs_endpoint": os.environ.get("VECTOR_SEARCH_ENDPOINT", ""),
@@ -45,9 +45,17 @@ def get_chat_llm(temperature: float = 0.0):
     We use the OpenAI-compatible surface (same as PA1–PA3) so the deployed
     endpoint speaks the same protocol the client SDK expects.
     """
+    s = get_settings()
+    if not s["host"] or not s["token"]:
+        from databricks_langchain import ChatDatabricks
+
+        return ChatDatabricks(
+            endpoint=s["model"],
+            temperature=temperature,
+        )
+
     from langchain_openai import ChatOpenAI
 
-    s = get_settings()
     return ChatOpenAI(
         model=s["model"],
         api_key=s["token"],
